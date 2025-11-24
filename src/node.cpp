@@ -352,12 +352,19 @@ std::variant<std::string, std::vector<NodeInfo>> Node::iterative_find_value(cons
 }
 
 bool Node::store_value(const NodeID &key_id, const std::string &key_hex, const std::string &value) {
+    // store locally first (so the node that initiated the STORE can answer FINDVAL immediately)
+    _store->put(key_hex, value);
+
+    // find k-closest peers and send STORE RPCs (replicate)
     auto closest = iterative_find_node(key_id);
     for (auto &peer : closest) {
+        // avoid sending to ourselves (we already stored locally)
+        if (peer.addr == _addr) continue;
         rpc_store(peer.addr, key_hex, value);
     }
     return true;
 }
+
 
 void Node::bootstrap(const std::string &bootstrap_addr) {
     if (bootstrap_addr == _addr) return;
