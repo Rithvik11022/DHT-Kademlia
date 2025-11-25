@@ -3,19 +3,68 @@
 #include <thread>
 #include <chrono>
 #include <variant>
+#include <ifaddrs.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <cstring>
+#include <net/if.h>    // for IFF_UP
+
+// Returns the first non-loopback IPv4 address found on the host, or "127.0.0.1"
+// if none found. Uses getifaddrs so it works reliably on Linux.
+std::string detect_first_nonloopback_ipv4() {
+    struct ifaddrs *ifaddr = nullptr;
+    if (getifaddrs(&ifaddr) == -1) {
+        return std::string("127.0.0.1");
+    }
+
+    std::string result = "127.0.0.1";
+    for (struct ifaddrs *ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
+        if (!ifa->ifa_addr) continue;
+        if (ifa->ifa_addr->sa_family == AF_INET) {
+            // IPv4
+            char buf[INET_ADDRSTRLEN]{0};
+            void *addrptr = &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
+            inet_ntop(AF_INET, addrptr, buf, INET_ADDRSTRLEN);
+            std::string ip(buf);
+            // skip loopback addresses
+            if (ip == "127.0.0.1" || ip.rfind("127.", 0) == 0) continue;
+            // ensure interface is up
+            unsigned int flags = ifa->ifa_flags;
+            if ((flags & IFF_UP) == 0) continue;
+            // found a candidate
+            result = ip;
+            break;
+        }
+    }
+    freeifaddrs(ifaddr);
+    return result;
+}
 
 // Simple CLI:
-// ./kademlia --port 3000 [--bootstrap ip:port]
+// ./kademlia --port 3000 [--bootstrap ip:port] [--advertise ip:port]
 int main(int argc, char **argv) {
     uint16_t port = 3000;
     std::string bootstrap;
+
     for (int i = 1; i < argc; ++i) {
         std::string a = argv[i];
-        if (a == "--port" && i+1 < argc) { port = (uint16_t)std::stoi(argv[++i]); }
-        else if (a == "--bootstrap" && i+1 < argc) { bootstrap = argv[++i]; }
+        if (a == "--port" && i+1 < argc) {
+            port = (uint16_t)std::stoi(argv[++i]);
+        } else if (a == "--bootstrap" && i+1 < argc) {
+            bootstrap = argv[++i];
+        }
+        else {
+            std::cerr << "Unknown arg: " << a << "\n";
+        }
     }
+
+    // detect a suitable local IPv4 if advertise not provided
+    std::string addr;
+    std::string ip = detect_first_nonloopback_ipv4();
+    addr = ip + ":" + std::to_string(port);
+
     NodeID id = NodeID::random();
-    std::string addr = "127.0.0.1:" + std::to_string(port);
+    // NOTE: Node constructor in your current headers expects 3 args (id, addr, port).
     Node node(id, addr, port);
     node.start();
     if (!bootstrap.empty()) {
