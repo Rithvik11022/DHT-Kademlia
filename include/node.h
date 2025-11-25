@@ -64,6 +64,7 @@ public:
     // Higher-level algorithms
     std::vector<NodeInfo> iterative_find_node(const NodeID &target);
     std::variant<std::string, std::vector<NodeInfo>> iterative_find_value(const std::string &key_hex, const NodeID &key_id);
+    std::variant<std::string, std::vector<NodeInfo>> iterative_find_value_trace(const std::string &key_hex, const NodeID &key_id);
     bool store_value(const NodeID &key_id, const std::string &key_hex, const std::string &value);
 
     // bootstrap: contact known peer

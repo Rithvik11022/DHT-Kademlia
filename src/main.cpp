@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
     }
 
     std::cout << "Node started at " << addr << " id=" << id.to_hex()<< "\n";
-    std::cout << "Commands:\n  STORE key value\n  FINDVAL_AT key\n  FINDNODE hexid\n  QUIT\n HELP\n";
+    std::cout << "Commands:\n  STORE key value\n  FINDVAL_AT key\n  FINDVAL_TRACE key\n FINDNODE hexid\n  QUIT\n HELP\n";
     std::string line;
     while (true) {
         std::cout << "> " << std::flush;
@@ -98,8 +98,8 @@ int main(int argc, char **argv) {
         if (line.empty()) continue;
         if (line == "QUIT"||line == "quit") break;
         if (line == "HELP" || line == "help"){
-            std::cout << "Node started at " << addr << " id=" << id.to_hex().substr(0,8) << " ...\n";
-            std::cout << "Commands:\n  STORE key value\n  FINDVAL_AT key\n  FINDNODE hexid\n  QUIT HELP\n";
+            std::cout << "Node started at " << addr << " id=" << id.to_hex()<< "\n";
+            std::cout << "Commands:\n  STORE key value\n  FINDVAL_AT key\n FINDVAL_TRACE key\n FINDNODE hexid\n  QUIT HELP\n";
             continue;
         }
         if (line.rfind("STORE ", 0) == 0 || line.rfind("store ", 0) == 0) {
@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
             node.store_value(keyid, key_hex, value);
             std::cout << "STORE initiated\n";
         } else if (line.rfind("FINDVAL_AT ", 0) == 0 || line.rfind("findval_at ", 0) == 0 ) {
-            std::string key_hex = line.substr(8);
+            std::string key_hex = line.substr(11);
             NodeID keyid = NodeID::from_hex(key_hex);
             auto res = node.iterative_find_value(key_hex, keyid);
             if (std::holds_alternative<std::string>(res)) {
@@ -120,14 +120,25 @@ int main(int argc, char **argv) {
             } else {
                 auto v = std::get<std::vector<NodeInfo>>(res);
                 std::cout << "Closest nodes (" << v.size() << "):\n";
-                for (auto &n : v) std::cout << "  " << n.addr << " id=" << n.id.to_hex().substr(0,8) << "...\n";
+                for (auto &n : v) std::cout << "  " << n.addr << " id=" << n.id.to_hex()<< "\n";
+            }
+        } else if (line.rfind("FINDVAL_TRACE ", 0) == 0 || line.rfind("findval_trace ", 0) == 0 ) {
+            std::string key_hex = line.substr(14);
+            NodeID keyid = NodeID::from_hex(key_hex);
+            auto res = node.iterative_find_value_trace(key_hex, keyid);
+            if (std::holds_alternative<std::string>(res)) {
+                std::cout << "VALUE: " << std::get<std::string>(res) << "\n";
+            } else {
+                auto v = std::get<std::vector<NodeInfo>>(res);
+                std::cout << "Closest nodes (" << v.size() << "):\n";
+                for (auto &n : v) std::cout << "  " << n.addr << " id=" << n.id.to_hex() << "\n";
             }
         } else if (line.rfind("FINDNODE ", 0) == 0 || line.rfind("findnode ", 0) == 0) {
             std::string hexid = line.substr(9);
             NodeID idt = NodeID::from_hex(hexid);
             auto v = node.iterative_find_node(idt);
             std::cout << "Found nodes:\n";
-            for (auto &n : v) std::cout << "  " << n.addr << " id=" << n.id.to_hex().substr(0,8) << "...\n";
+            for (auto &n : v) std::cout << "  " << n.addr << " id=" << n.id.to_hex() << "\n";
         } else {
             std::cout << "Unknown command\n";
         }

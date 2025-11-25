@@ -226,7 +226,7 @@ bool Node::rpc_ping(const std::string &peer_addr, int timeout_ms) {
         std::cout << peer_addr << ' ' << "eher\n" << r <<"\n" ; 
         std::string id_node = r.substr(std::string("PONG|1|").size());
         id_node.erase(id_node.size()-1);
-        std::cout << peer_addr << ' ' << "eher\n" << id_node <<"\n" ; 
+        // std::cout << peer_addr << ' ' << "eher\n" << r <<"\n" ; 
         _rt->update_contact(NodeInfo{ NodeID::from_hex(id_node), peer_addr});
         return true;
     }
@@ -237,11 +237,13 @@ std::optional<FindNodeResult> Node::rpc_find_node(const std::string &peer_addr, 
     std::string msg = "FIND_NODE|" + _id.to_hex() + "|" + _addr + "|" + target.to_hex() + "\n";
     // std::cout<<_id.to_hex()<<std::endl;
     // std::cout<<target.to_hex()<<std::endl;
+    // std::cout<<msg<<" hello "<<std::endl;
     auto res = _net->send_request_wait_response(peer_addr, msg, timeout_ms);
     if (!res) return std::nullopt;
     std::string r = *res;
     if (r.rfind("FIND_NODE_REPLY|", 0) != 0) return std::nullopt;
     std::string payload = r.substr(std::string("FIND_NODE_REPLY|").size());
+    // if (!payload.empty() && payload.back() == '\n') payload.pop_back();
     std::vector<NodeInfo> out;
     if (!payload.empty()) {
         size_t pos = 0;
@@ -347,7 +349,52 @@ std::variant<std::string, std::vector<NodeInfo>> Node::iterative_find_value(cons
             q++;
             auto res = rpc_find_value(candidates[i].addr, key_hex, key_id);
             if (!res) continue;
-            if (res->value.has_value()) return *res->value;
+            if (res->value.has_value()){
+                return *res->value;
+            } 
+            for (auto &n : res->nodes) {
+                bool exists = false;
+                for (auto &c : candidates) if (c.addr == n.addr) { exists = true; break; }
+                if (!exists) { candidates.push_back(n); progress = true; }
+            }
+        }
+        std::sort(candidates.begin(), candidates.end(), [&](const NodeInfo &a, const NodeInfo &b){
+            NodeID da = a.id ^ key_id, db = b.id ^ key_id; return da.less_than(db);
+        });
+        if (candidates.size() > K_BUCKET_SIZE) candidates.resize(K_BUCKET_SIZE);
+    }
+    return candidates;
+}
+
+std::variant<std::string, std::vector<NodeInfo>> Node::iterative_find_value_trace(const std::string &key_hex, const NodeID &key_id) {
+    auto candidates = _rt->find_closest(key_id, K_BUCKET_SIZE);
+    std::vector<std::vector<NodeInfo>> global_trace;
+    std::unordered_set<std::string> queried;
+    bool progress = true;
+    while (progress) {
+        std::vector<NodeInfo> trace;
+        progress = false;
+        size_t q = 0;
+        for (size_t i = 0; i < candidates.size() && q < ALPHA; ++i) {
+            if (queried.count(candidates[i].addr)) continue;
+            queried.insert(candidates[i].addr);
+            q++;
+            auto res = rpc_find_value(candidates[i].addr, key_hex, key_id);
+            trace.push_back(candidates[i]);
+            if (!res) continue;
+            if (res->value.has_value()){
+                for(auto path : global_trace)
+                {
+                    std::cout<<"+-- ";
+                    int i;
+                    for(i=0;i<(3<path.size()?3:path.size())-1;i++)
+                    {
+                        std::cout<<path[i].addr<<" || ";
+                    }
+                    std::cout<<path[i].addr<<"--+\n|\n";
+                }
+                return *res->value;
+            } 
             for (auto &n : res->nodes) {
                 bool exists = false;
                 for (auto &c : candidates) if (c.addr == n.addr) { exists = true; break; }
