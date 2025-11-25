@@ -209,7 +209,8 @@ void Node::process_incoming_message(const std::string &msg, const std::string &f
         std::string reply = "STORE_REPLY|OK\n";
         _net->send_message(from_address, reply);
     } else {
-        // unknown
+        // std::cout<<"hello"<<std::endl;
+        // std::cout<<m<<std::endl;
     }
 }
 
@@ -220,7 +221,7 @@ bool Node::rpc_ping(const std::string &peer_addr, int timeout_ms) {
     if (!res) return false;
     std::string r = *res;
     if (r.find("PONG|1") != std::string::npos) {
-        _rt->update_contact(NodeInfo{ /*best-effort*/ NodeID::from_hex(_id.to_hex()), peer_addr});
+        _rt->update_contact(NodeInfo{ NodeID::from_hex(_id.to_hex()), peer_addr});
         return true;
     }
     return false;
