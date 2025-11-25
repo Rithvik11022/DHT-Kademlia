@@ -84,26 +84,25 @@ int main(int argc, char **argv) {
                 std::string fixed_ip = detect_first_nonloopback_ipv4();
                 bootstrap = fixed_ip + ":" + std::to_string(bp_port);
             }
-
         }
         std::cout << "Bootstrapping to " << bootstrap << "...\n";
         node.bootstrap(bootstrap);
     }
 
-    std::cout << "Node started at " << addr << " id=" << id.to_hex().substr(0,8) << " ...\n";
-    std::cout << "Commands:\n  STORE key value\n  FINDVAL key\n  FINDNODE hexid\n  QUIT\n";
+    std::cout << "Node started at " << addr << " id=" << id.to_hex()<< "\n";
+    std::cout << "Commands:\n  STORE key value\n  FINDVAL_AT key\n  FINDNODE hexid\n  QUIT\n HELP\n";
     std::string line;
     while (true) {
         std::cout << "> " << std::flush;
         if (!std::getline(std::cin, line)) break;
         if (line.empty()) continue;
-        if (line == "QUIT") break;
-        if (line == "HELP"){
+        if (line == "QUIT"||line == "quit") break;
+        if (line == "HELP" || line == "help"){
             std::cout << "Node started at " << addr << " id=" << id.to_hex().substr(0,8) << " ...\n";
-            std::cout << "Commands:\n  STORE key value\n  FINDVAL key\n  FINDNODE hexid\n  QUIT\n";
+            std::cout << "Commands:\n  STORE key value\n  FINDVAL_AT key\n  FINDNODE hexid\n  QUIT HELP\n";
             continue;
         }
-        if (line.rfind("STORE ", 0) == 0) {
+        if (line.rfind("STORE ", 0) == 0 || line.rfind("store ", 0) == 0) {
             auto rest = line.substr(6);
             auto sp = rest.find(' ');
             if (sp == std::string::npos) { std::cout << "usage: STORE key_hex value\n"; continue; }
@@ -112,7 +111,7 @@ int main(int argc, char **argv) {
             NodeID keyid = NodeID::from_hex(key_hex);
             node.store_value(keyid, key_hex, value);
             std::cout << "STORE initiated\n";
-        } else if (line.rfind("FINDVAL ", 0) == 0) {
+        } else if (line.rfind("FINDVAL_AT ", 0) == 0 || line.rfind("findval_at ", 0) == 0 ) {
             std::string key_hex = line.substr(8);
             NodeID keyid = NodeID::from_hex(key_hex);
             auto res = node.iterative_find_value(key_hex, keyid);
@@ -123,7 +122,7 @@ int main(int argc, char **argv) {
                 std::cout << "Closest nodes (" << v.size() << "):\n";
                 for (auto &n : v) std::cout << "  " << n.addr << " id=" << n.id.to_hex().substr(0,8) << "...\n";
             }
-        } else if (line.rfind("FINDNODE ", 0) == 0) {
+        } else if (line.rfind("FINDNODE ", 0) == 0 || line.rfind("findnode ", 0) == 0) {
             std::string hexid = line.substr(9);
             NodeID idt = NodeID::from_hex(hexid);
             auto v = node.iterative_find_node(idt);

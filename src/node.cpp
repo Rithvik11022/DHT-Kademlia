@@ -179,6 +179,7 @@ void Node::process_incoming_message(const std::string &msg, const std::string &f
             body += ni.addr + "," + ni.id.to_hex();
         }
         std::string reply = std::string("FIND_NODE_REPLY|") + body + "\n";
+        // std::cout<<reply<<std::endl;
         _net->send_message(from_address, reply);
     } else if (cmd == "FIND_VALUE") {
         if (parts.size() < 4) return;
@@ -229,6 +230,8 @@ bool Node::rpc_ping(const std::string &peer_addr, int timeout_ms) {
 
 std::optional<FindNodeResult> Node::rpc_find_node(const std::string &peer_addr, const NodeID &target, int timeout_ms) {
     std::string msg = "FIND_NODE|" + _id.to_hex() + "|" + _addr + "|" + target.to_hex() + "\n";
+    // std::cout<<_id.to_hex()<<std::endl;
+    // std::cout<<target.to_hex()<<std::endl;
     auto res = _net->send_request_wait_response(peer_addr, msg, timeout_ms);
     if (!res) return std::nullopt;
     std::string r = *res;
@@ -246,10 +249,12 @@ std::optional<FindNodeResult> Node::rpc_find_node(const std::string &peer_addr, 
                 std::string adr = entry.substr(0, comma);
                 std::string idh = entry.substr(comma+1);
                 out.emplace_back(NodeID::from_hex(idh), adr);
+                // std::cout<<idh <<" c "<<adr<<std::endl;
             }
             pos = semi + 1;
         }
     }
+
     return FindNodeResult{out};
 }
 
