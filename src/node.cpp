@@ -5,6 +5,7 @@
 #include <random>
 #include <sstream>
 #include <iostream>
+#include <string>
 #include <thread>
 #include <chrono>
 #include <algorithm>
@@ -165,7 +166,7 @@ void Node::process_incoming_message(const std::string &msg, const std::string &f
         NodeID from_id = NodeID::from_hex(parts[1]);
         std::string from_address = parts[2];
         bool ok = handle_ping(NodeInfo{from_id, from_address});
-        std::string reply = std::string("PONG|") + (ok ? "1" : "0") + "\n";
+        std::string reply = std::string("PONG|") + (ok ? "1" : "0") +std::string("|") + _id.to_hex() + "\n";
         _net->send_message(from_address, reply);
     } else if (cmd == "FIND_NODE") {
         if (parts.size() < 4) return;
@@ -222,7 +223,11 @@ bool Node::rpc_ping(const std::string &peer_addr, int timeout_ms) {
     if (!res) return false;
     std::string r = *res;
     if (r.find("PONG|1") != std::string::npos) {
-        _rt->update_contact(NodeInfo{ NodeID::from_hex(_id.to_hex()), peer_addr});
+        std::cout << peer_addr << ' ' << "eher\n" << r <<"\n" ; 
+        std::string id_node = r.substr(std::string("PONG|1|").size());
+        id_node.erase(id_node.size()-1);
+        std::cout << peer_addr << ' ' << "eher\n" << id_node <<"\n" ; 
+        _rt->update_contact(NodeInfo{ NodeID::from_hex(id_node), peer_addr});
         return true;
     }
     return false;

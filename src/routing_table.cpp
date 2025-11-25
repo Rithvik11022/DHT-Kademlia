@@ -1,4 +1,5 @@
 #include "routing_table.h"
+#include <iostream>
 #include <algorithm>
 #include <unordered_map>
 
@@ -13,6 +14,7 @@ void RoutingTable::update_contact(const NodeInfo &n) {
     if (idx < 0 || idx >= (int)buckets.size()) return;
     std::lock_guard<std::mutex> lk(_mu);
     auto &dq = buckets[idx];
+    std::cout << buckets.size() << " here " << std::endl ; 
     // remove if exists
     dq.erase(std::remove_if(dq.begin(), dq.end(), [&](const NodeInfo &x){ return x.id == n.id; }), dq.end());
     dq.push_front(n);
@@ -23,7 +25,7 @@ void RoutingTable::update_contact(const NodeInfo &n) {
 std::vector<NodeInfo> RoutingTable::find_closest(const NodeID &target, size_t count) const {
     std::vector<NodeInfo> all;
     {
-        std::lock_guard<std::mutex> lk(_mu);
+        std::lock_guard<std::mutex> lk(_mu); // bucket -> vector<deque> 
         for (auto &dq : buckets) {
             for (auto &ni : dq) all.push_back(ni);
         }
