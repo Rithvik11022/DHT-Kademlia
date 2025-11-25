@@ -40,8 +40,17 @@ std::string detect_first_nonloopback_ipv4() {
     return result;
 }
 
+bool split_addr(const std::string &addr, std::string &ip, uint16_t &port) {
+    auto pos = addr.find(':');
+    if (pos == std::string::npos) return false;
+    ip = addr.substr(0, pos);
+    port = (uint16_t)std::stoi(addr.substr(pos + 1));
+    return true;
+}
+
+
 // Simple CLI:
-// ./kademlia --port 3000 [--bootstrap ip:port] [--advertise ip:port]
+// ./kademlia --port 3000 [--bootstrap ip:port]
 int main(int argc, char **argv) {
     uint16_t port = 3000;
     std::string bootstrap;
@@ -68,9 +77,19 @@ int main(int argc, char **argv) {
     Node node(id, addr, port);
     node.start();
     if (!bootstrap.empty()) {
+        std::string ip;
+        uint16_t bp_port;
+        if (split_addr(bootstrap, ip, bp_port)) {
+            if (ip == "127.0.0.1") {
+                std::string fixed_ip = detect_first_nonloopback_ipv4();
+                bootstrap = fixed_ip + ":" + std::to_string(bp_port);
+            }
+
+        }
         std::cout << "Bootstrapping to " << bootstrap << "...\n";
         node.bootstrap(bootstrap);
     }
+
     std::cout << "Node started at " << addr << " id=" << id.to_hex().substr(0,8) << " ...\n";
     std::cout << "Commands:\n  STORE key value\n  FINDVAL key\n  FINDNODE hexid\n  QUIT\n";
     std::string line;

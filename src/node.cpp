@@ -367,8 +367,14 @@ bool Node::store_value(const NodeID &key_id, const std::string &key_hex, const s
 
 
 void Node::bootstrap(const std::string &bootstrap_addr) {
-    if (bootstrap_addr == _addr) return;
-    if (!rpc_ping(bootstrap_addr)) return;
+    if (bootstrap_addr == _addr){
+        std::cerr << "Bootstrap address is the same as the local node address\n";
+        exit (1);
+    };
+    if (!rpc_ping(bootstrap_addr)) {
+        std::cerr << " Bootstrap node " << bootstrap_addr << " is not reachable (PING failed).\n";
+        exit (1);
+    };
     auto res = rpc_find_node(bootstrap_addr, _id);
     if (!res) return;
     for (auto &ni : res->nodes) _rt->update_contact(ni);
