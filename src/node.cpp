@@ -339,7 +339,11 @@ std::vector<NodeInfo> Node::iterative_find_node(const NodeID &target) {
 std::variant<std::string, std::vector<NodeInfo>> Node::iterative_find_value(const std::string &key_hex, const NodeID &key_id) {
     auto candidates = _rt->find_closest(key_id, K_BUCKET_SIZE);
     if(candidates.size()==0){
-        return _store->get(key_hex);
+        auto val = _store->get(key_hex);
+        if (val.has_value()) {
+            return *val;
+        }
+        return std::vector<NodeInfo>();
     }
     std::unordered_set<std::string> queried;
     bool progress = true;
@@ -372,7 +376,11 @@ std::variant<std::string, std::vector<NodeInfo>> Node::iterative_find_value(cons
 std::variant<std::string, std::vector<NodeInfo>> Node::iterative_find_value_trace(const std::string &key_hex, const NodeID &key_id) {
     auto candidates = _rt->find_closest(key_id, K_BUCKET_SIZE);
     if(candidates.size()==0){
-        return _store->get(key_hex);
+        auto val = _store->get(key_hex);
+        if (val.has_value()) {
+            return *val;
+        }
+        return std::vector<NodeInfo>();
     }
     std::vector<std::vector<NodeInfo>> global_trace;
     std::unordered_set<std::string> queried;

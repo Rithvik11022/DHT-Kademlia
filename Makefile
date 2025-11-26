@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -O2 -pthread -Iinclude -g
-SRCS = src/main.cpp src/node.cpp src/network.cpp src/routing_table.cpp src/storage.cpp
+SRCS = src/main.cpp src/node.cpp src/network.cpp src/routing_table.cpp src/storage.cpp src/sha1.cpp
 OBJS = $(SRCS:.cpp=.o)
 TARGET = bin/kademlia
 
