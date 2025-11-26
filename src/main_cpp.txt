@@ -1,10 +1,8 @@
 #include "node.h"
-#include "storage.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
 #include <variant>
-#include <unordered_map>
 #include <ifaddrs.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -94,22 +92,7 @@ int main(int argc, char **argv) {
     std::cout << "Node started at " << addr << " id=" << id.to_hex()<< "\n";
     std::cout << "Commands:\n  STORE key value\n  FINDVAL_AT key\n  FINDVAL_TRACE key\n FINDNODE hexid\n  QUIT\n HELP\n";
     std::string line;
-    using clock = std::chrono::steady_clock;
-    auto last = clock::now();
     while (true) {
-        auto current = clock::now();
-        if (std::chrono::duration_cast<std::chrono::seconds>(current - last).count() >= 3600) {
-            std::cout << "3600 seconds passed — republishing!\n";
-            auto backup = node.backup_all_stored();
-            node.clear_all_stored();
-            for (const auto &p : backup) {
-                const std::string &key_hex = p.first;
-                const std::string &value   = p.second;
-                NodeID keyid = NodeID::from_hex(key_hex);
-                node.store_value(keyid, key_hex, value);
-            }
-            last = current;
-        }
         std::cout << "> " << std::flush;
         if (!std::getline(std::cin, line)) break;
         if (line.empty()) continue;

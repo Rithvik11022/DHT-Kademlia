@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 #include <optional>
-#include <unordered_map>
 #include <cstdint>   // uint8_t, uint16_t
 #include <variant>   // std::variant
 #include <memory>
@@ -68,8 +67,6 @@ public:
     std::variant<std::string, std::vector<NodeInfo>> iterative_find_value_trace(const std::string &key_hex, const NodeID &key_id);
     bool store_value(const NodeID &key_id, const std::string &key_hex, const std::string &value);
 
-    std::unordered_map<std::string, std::string> backup_all_stored();
-    void clear_all_stored();
     // bootstrap: contact known peer
     void bootstrap(const std::string &bootstrap_addr);
 

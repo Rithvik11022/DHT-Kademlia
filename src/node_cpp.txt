@@ -103,16 +103,6 @@ void Node::stop() {
     _net->stop_receive();
 }
 
-std::unordered_map<std::string, std::string> Node::backup_all_stored() {
-    if (!_store) return {};
-    return _store->get_all();
-}
-
-void Node::clear_all_stored() {
-    if (!_store) return;
-    _store->clear_all();
-}
-
 // on-wire protocol: messages are newline-terminated ASCII "CMD|args..."
 // handlers:
 
