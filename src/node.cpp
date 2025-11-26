@@ -338,6 +338,9 @@ std::vector<NodeInfo> Node::iterative_find_node(const NodeID &target) {
 
 std::variant<std::string, std::vector<NodeInfo>> Node::iterative_find_value(const std::string &key_hex, const NodeID &key_id) {
     auto candidates = _rt->find_closest(key_id, K_BUCKET_SIZE);
+    if(candidates.size()==0){
+        return _store->get(key_hex);
+    }
     std::unordered_set<std::string> queried;
     bool progress = true;
     while (progress) {
@@ -368,6 +371,9 @@ std::variant<std::string, std::vector<NodeInfo>> Node::iterative_find_value(cons
 
 std::variant<std::string, std::vector<NodeInfo>> Node::iterative_find_value_trace(const std::string &key_hex, const NodeID &key_id) {
     auto candidates = _rt->find_closest(key_id, K_BUCKET_SIZE);
+    if(candidates.size()==0){
+        return _store->get(key_hex);
+    }
     std::vector<std::vector<NodeInfo>> global_trace;
     std::unordered_set<std::string> queried;
     bool progress = true;
@@ -411,14 +417,14 @@ std::variant<std::string, std::vector<NodeInfo>> Node::iterative_find_value_trac
 
 bool Node::store_value(const NodeID &key_id, const std::string &key_hex, const std::string &value) {
     // store locally first (so the node that initiated the STORE can answer FINDVAL immediately)
-    _store->put(key_hex, value);
 
     // find k-closest peers and send STORE RPCs (replicate)
     auto closest = iterative_find_node(key_id);
     for (auto &peer : closest) {
-        // avoid sending to ourselves (we already stored locally)
-        if (peer.addr == _addr) continue;
         rpc_store(peer.addr, key_hex, value);
+    }
+    if(closest.size()==0){
+        _store->put(key_hex,value);
     }
     return true;
 }
