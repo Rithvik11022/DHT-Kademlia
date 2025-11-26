@@ -339,7 +339,7 @@ std::vector<NodeInfo> Node::iterative_find_node(const NodeID &target) {
 std::variant<std::string, std::vector<NodeInfo>> Node::iterative_find_value(const std::string &key_hex, const NodeID &key_id) {
     auto candidates = _rt->find_closest(key_id, K_BUCKET_SIZE);
     if(candidates.size()==0){
-        auto val = _store->get(key_hex);
+         auto val = _store->get(key_hex);
         if (val.has_value()) {
             return *val;
         }
@@ -376,7 +376,7 @@ std::variant<std::string, std::vector<NodeInfo>> Node::iterative_find_value(cons
 std::variant<std::string, std::vector<NodeInfo>> Node::iterative_find_value_trace(const std::string &key_hex, const NodeID &key_id) {
     auto candidates = _rt->find_closest(key_id, K_BUCKET_SIZE);
     if(candidates.size()==0){
-        auto val = _store->get(key_hex);
+         auto val = _store->get(key_hex);
         if (val.has_value()) {
             return *val;
         }
