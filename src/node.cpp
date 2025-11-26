@@ -233,7 +233,7 @@ bool Node::rpc_ping(const std::string &peer_addr, int timeout_ms) {
     if (!res) return false;
     std::string r = *res;
     if (r.find("PONG|1") != std::string::npos) {
-        std::cout << peer_addr << ' ' << "eher\n" << r <<"\n" ; 
+        //std::cout << peer_addr << ' ' << "eher\n" << r <<"\n" ; 
         std::string id_node = r.substr(std::string("PONG|1|").size());
         id_node.erase(id_node.size()-1);
         // std::cout << peer_addr << ' ' << "eher\n" << r <<"\n" ; 
