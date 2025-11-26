@@ -78,14 +78,12 @@ void UDPNetwork::start_receive(std::function<void(const std::string&, const std:
             buf[n] = '\0';
             std::string msg(buf);
             std::string from_addr = addr_to_string(from);
-            // If it's a reply for a synchronous waiter, set last_reply and notify
             {
                 std::unique_lock<std::mutex> lk(i->reply_mutex);
                 i->last_reply = msg;
                 i->last_reply_from = from_addr;
                 i->reply_cv.notify_all();
             }
-            // call handler (in same thread)
             if (i->handler) i->handler(msg, from_addr);
         }
     });
@@ -95,7 +93,6 @@ void UDPNetwork::stop_receive() {
     if (!impl) return;
     if (impl->running) {
         impl->running = false;
-        // interrupt recv by sending empty datagram to self
         sockaddr_in addr{};
         addr.sin_family = AF_INET;
         addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
@@ -129,7 +126,6 @@ std::optional<std::string> UDPNetwork::send_request_wait_response(const std::str
     dst.sin_port = htons(port);
     ssize_t sent = sendto(impl->sock, msg.c_str(), (int)msg.size(), 0, (sockaddr*)&dst, sizeof(dst));
     if (sent <= 0) return std::nullopt;
-    // wait for reply (simple approach: wait on condition variable; last_reply overwritten by any incoming)
     std::unique_lock<std::mutex> lk(impl->reply_mutex);
     if (impl->reply_cv.wait_for(lk, std::chrono::milliseconds(timeout_ms)) == std::cv_status::timeout) {
         return std::nullopt;

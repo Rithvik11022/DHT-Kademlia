@@ -25,12 +25,11 @@ void RoutingTable::update_contact(const NodeInfo &n) {
 std::vector<NodeInfo> RoutingTable::find_closest(const NodeID &target, size_t count) const {
     std::vector<NodeInfo> all;
     {
-        std::lock_guard<std::mutex> lk(_mu); // bucket -> vector<deque> 
+        std::lock_guard<std::mutex> lk(_mu);
         for (auto &dq : buckets) {
             for (auto &ni : dq) all.push_back(ni);
         }
     }
-    // unique by addr
     std::unordered_map<std::string, NodeInfo> uniq;
     for (auto &n : all) uniq[n.addr] = n;
     std::vector<NodeInfo> v;

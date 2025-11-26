@@ -15,7 +15,7 @@ std::optional<std::string> Storage::get(const std::string &key_hex) const {
 
 std::unordered_map<std::string, std::string> Storage::get_all() {
     std::shared_lock<std::shared_mutex> lk(mu);
-    return data; // copy returned
+    return data;
 }
 
 void Storage::clear_all() {

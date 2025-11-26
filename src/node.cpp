@@ -12,12 +12,10 @@
 #include <unordered_set>
 #include <variant>
 
-// NodeID implementation
 NodeID NodeID::random() {
     NodeID id;
     static thread_local std::mt19937_64 rng((unsigned)std::chrono::high_resolution_clock::now().time_since_epoch().count());
     for (size_t i = 0; i < ID_BYTES; ++i) {
-        // use rng() to get random 64-bit then take low byte
         id.b[i] = static_cast<byte>(rng() & 0xFFULL);
     }
     return id;
@@ -75,7 +73,6 @@ int NodeID::prefix_len_to(const NodeID &o) const {
     return -1;
 }
 
-// Node implementation
 static const size_t K_BUCKET_SIZE = 20;
 static const size_t ALPHA = 3;
 
@@ -113,8 +110,6 @@ void Node::clear_all_stored() {
     _store->clear_all();
 }
 
-// on-wire protocol: messages are newline-terminated ASCII "CMD|args..."
-// handlers:
 
 bool Node::handle_ping(const NodeInfo &from) {
     _rt->update_contact(from);
@@ -140,7 +135,6 @@ void Node::handle_store(const NodeInfo &from, const std::string &key_hex, const 
     _store->put(key_hex, value);
 }
 
-// helpers for parsing/sending
 static std::vector<std::string> split_pipe(const std::string &s) {
     std::vector<std::string> out;
     size_t pos = 0;
@@ -226,7 +220,6 @@ void Node::process_incoming_message(const std::string &msg, const std::string &f
     }
 }
 
-// Client RPCs
 bool Node::rpc_ping(const std::string &peer_addr, int timeout_ms) {
     std::string msg = "PING|" + _id.to_hex() + "|" + _addr + "\n";
     auto res = _net->send_request_wait_response(peer_addr, msg, timeout_ms);
@@ -317,7 +310,6 @@ bool Node::rpc_store(const std::string &peer_addr, const std::string &key_hex, c
     return false;
 }
 
-// iterative find_node (basic)
 std::vector<NodeInfo> Node::iterative_find_node(const NodeID &target) {
     auto candidates = _rt->find_closest(target, K_BUCKET_SIZE);
     std::unordered_set<std::string> queried;
@@ -434,9 +426,7 @@ std::variant<std::string, std::vector<NodeInfo>> Node::iterative_find_value_trac
 }
 
 bool Node::store_value(const NodeID &key_id, const std::string &key_hex, const std::string &value) {
-    // store locally first (so the node that initiated the STORE can answer FINDVAL immediately)
 
-    // find k-closest peers and send STORE RPCs (replicate)
     auto closest = iterative_find_node(key_id);
     for (auto &peer : closest) {
         rpc_store(peer.addr, key_hex, value);
