@@ -15,11 +15,9 @@ void RoutingTable::update_contact(const NodeInfo &n) {
     std::lock_guard<std::mutex> lk(_mu);
     auto &dq = buckets[idx];
     // std::cout << buckets.size() << " here " << std::endl ; 
-    // remove if exists
     dq.erase(std::remove_if(dq.begin(), dq.end(), [&](const NodeInfo &x){ return x.id == n.id; }), dq.end());
     dq.push_front(n);
-    // cap
-    if (dq.size() > 20) dq.pop_back();
+    if (dq.size() > K_BUCKET_SIZE) dq.pop_back();
 }
 
 std::vector<NodeInfo> RoutingTable::find_closest(const NodeID &target, size_t count) const {

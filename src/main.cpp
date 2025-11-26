@@ -66,7 +66,6 @@ int main(int argc, char **argv) {
     addr = ip + ":" + std::to_string(port);
 
     NodeID id = NodeID::random();
-    // NOTE: Node constructor in your current headers expects 3 args (id, addr, port).
     Node node(id, addr, port);
     node.start();
     if (!bootstrap.empty()) {

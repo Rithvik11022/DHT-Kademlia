@@ -10,6 +10,8 @@
 
 using byte = uint8_t;
 static constexpr size_t ID_BYTES = 20; // 160-bit
+static const size_t K_BUCKET_SIZE = 20;
+static const size_t ALPHA = 3;
 
 struct NodeID {
     std::array<byte, ID_BYTES> b;

@@ -73,9 +73,6 @@ int NodeID::prefix_len_to(const NodeID &o) const {
     return -1;
 }
 
-static const size_t K_BUCKET_SIZE = 20;
-static const size_t ALPHA = 3;
-
 Node::Node(const NodeID &id, const std::string &addr, uint16_t port)
     : _id(id), _addr(addr), _port(port) {
     _rt = new RoutingTable(_id);
@@ -403,20 +400,21 @@ std::variant<std::string, std::vector<NodeInfo>> Node::iterative_find_value_trac
                 {
                     std::cout<<"+-- ";
                     int i;
-                    for(i=0;i<(3<path.size()?3:path.size())-1;i++)
+                    for(i=0;i<(ALPHA>path.size()?ALPHA-1:path.size())-1;i++)
                     {
                         std::cout<<path[i].addr<<" || ";
                     }
                     std::cout<<path[i].addr<<"--+\n|\n";
                 }
                 return *res->value;
-            } 
+            }
             for (auto &n : res->nodes) {
                 bool exists = false;
                 for (auto &c : candidates) if (c.addr == n.addr) { exists = true; break; }
                 if (!exists) { candidates.push_back(n); progress = true; }
             }
         }
+        global_trace.push_back(trace);
         std::sort(candidates.begin(), candidates.end(), [&](const NodeInfo &a, const NodeInfo &b){
             NodeID da = a.id ^ key_id, db = b.id ^ key_id; return da.less_than(db);
         });
