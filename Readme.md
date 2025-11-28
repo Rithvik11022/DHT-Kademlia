@@ -170,13 +170,3 @@ Found nodes:
 2. FIND_NODE for self ID to populate routing table
 3. Nodes from response are added to routing table
 4. Node is now part of network and can route requests
-
-## Protocol Parameters
-
-| Parameter | Value | Description |
-|-----------|-------|-------------|
-| ID_BYTES | 20 | 160-bit node IDs |
-| K_BUCKET_SIZE | 20 | Max nodes per k-bucket |
-| ALPHA | 3 | Parallelism for lookups |
-| RPC Timeout | 500-800ms | Request timeout |
-| Republish Interval | 3600s | Value republishing period |
