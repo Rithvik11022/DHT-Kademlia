@@ -396,11 +396,13 @@ std::variant<std::string, std::vector<NodeInfo>> Node::iterative_find_value_trac
             trace.push_back(candidates[i]);
             if (!res) continue;
             if (res->value.has_value()){
+                std::cout<<"+-- ";
+                std::cout<<_addr<<"--+\n|\n";
                 for(auto path : global_trace)
                 {
                     std::cout<<"+-- ";
                     int i;
-                    for(i=0;i<(ALPHA>path.size()?ALPHA-1:path.size())-1;i++)
+                    for(i=0;i<path.size()-1;i++)
                     {
                         std::cout<<path[i].addr<<" || ";
                     }
