@@ -1,8 +1,4 @@
-# Kademlia DHT Implementation
-
-A C++17 implementation of the Kademlia Distributed Hash Table (DHT) protocol, based on the original paper by Maymounkov and Mazières.
-
-## Overview
+# Overview
 
 Kademlia is a peer-to-peer distributed hash table that provides efficient key-value storage and lookup in decentralized networks. This implementation includes:
 
@@ -65,7 +61,7 @@ Properties:
 
 **FIND_VALUE(key)**:
 - Same as FIND_NODE, but stops when value is found
-- Returns value or K closest nodes
+- Returns value or K closest nodes where the value is expected to be found.
 
 **STORE(key, value)**:
 1. Perform FIND_NODE(key) to find K closest nodes
@@ -107,11 +103,11 @@ Requires:
 
 ```bash
 # Start bootstrap node
-./bin/kademlia --port 3000
+./bin/kademlia --port <port_no>
 
-# Start additional nodes
-./bin/kademlia --port 3001 --bootstrap <bootstrap_ip>:3000
-./bin/kademlia --port 3002 --bootstrap <bootstrap_ip>:3000
+# Start nodes by 
+./bin/kademlia --port <port_no> --bootstrap <bootstrap_ip>:<bootstrap_port>
+./bin/kademlia --port <port_no> --bootstrap <bootstrap_ip>:<bootstrap_port>
 ```
 
 ### Commands
@@ -184,41 +180,3 @@ Found nodes:
 | ALPHA | 3 | Parallelism for lookups |
 | RPC Timeout | 500-800ms | Request timeout |
 | Republish Interval | 3600s | Value republishing period |
-
-## Implementation Notes
-
-### Differences from Paper
-
-1. **No bucket splitting**: Fixed 160 buckets instead of dynamic splitting
-2. **Simple LRU**: No PING-based verification before eviction
-3. **No caching**: Nodes don't cache values along lookup path
-4. **Synchronous lookups**: Iterative lookups block, not fully async
-5. **No key republishing by original publisher**: Only storing nodes republish
-
-### Limitations
-
-- UDP packet size limited to 4096 bytes
-- No encryption or authentication
-- No NAT traversal support
-- Single-threaded RPC handling per node
-- No persistent storage (data lost on restart)
-
-## Testing
-
-See `test_kademlia.sh` for automated testing suite that verifies:
-- Network formation and bootstrap
-- STORE/FIND_VALUE operations
-- Iterative lookup convergence
-- K-replication of stored values
-- Routing table convergence
-- Node departure handling
-
-## References
-
-Maymounkov, P., & Mazières, D. (2002). *Kademlia: A peer-to-peer information system based on the XOR metric*. In International Workshop on Peer-to-Peer Systems (pp. 53-65). Springer, Berlin, Heidelberg.
-
-Paper: https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf
-
-## License
-
-Public Domain / MIT - See individual file headers

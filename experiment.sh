@@ -41,38 +41,63 @@ if [ ! -f "$BINARY" ]; then
     echo ""
 fi
 
+# Detect IP (use 127.0.0.1 for local testing to avoid network issues)
+IP="127.0.0.1"
+echo "Using IP: $IP"
+
 # Test 1: Network Formation
 echo -e "${YELLOW}[TEST 1] Network Formation & Bootstrap${NC}"
 echo "Starting bootstrap node on port $BASE_PORT..."
 $BINARY --port $BASE_PORT > "$TEST_DIR/node_0.log" 2>&1 &
 NODE_PIDS[0]=$!
-sleep 2
+sleep 3  # Give bootstrap more time to fully initialize
 
-# Detect IP
-IP=$(ip route get 1.1.1.1 2>/dev/null | grep -oP 'src \K\S+' || echo "127.0.0.1")
-if [ "$IP" = "127.0.0.1" ]; then
-    IP=$(hostname -I | awk '{print $1}' || echo "127.0.0.1")
+# Verify bootstrap node is running
+if ! kill -0 ${NODE_PIDS[0]} 2>/dev/null; then
+    echo -e "${RED}✗ Bootstrap node failed to start${NC}"
+    cat "$TEST_DIR/node_0.log"
+    exit 1
+fi
+
+# Check if port is actually listening
+if ! netstat -tuln 2>/dev/null | grep -q ":$BASE_PORT " && ! ss -tuln 2>/dev/null | grep -q ":$BASE_PORT "; then
+    echo -e "${RED}✗ Bootstrap node not listening on port $BASE_PORT${NC}"
+    cat "$TEST_DIR/node_0.log"
+    exit 1
 fi
 
 BOOTSTRAP_ADDR="$IP:$BASE_PORT"
 echo "Bootstrap address: $BOOTSTRAP_ADDR"
+echo -e "${GREEN}✓ Bootstrap node verified${NC}"
 
-# Start additional nodes
+# Start additional nodes with verification
 echo "Starting $((NUM_NODES-1)) additional nodes..."
 for i in $(seq 1 $((NUM_NODES-1))); do
     PORT=$((BASE_PORT + i))
+    echo "  Starting node $i on port $PORT..."
     $BINARY --port $PORT --bootstrap "$BOOTSTRAP_ADDR" > "$TEST_DIR/node_$i.log" 2>&1 &
     NODE_PIDS[$i]=$!
-    sleep 0.5
+    sleep 2  # Increased delay between nodes
+    
+    # Verify each node started successfully
+    if ! kill -0 ${NODE_PIDS[$i]} 2>/dev/null; then
+        echo -e "${RED}✗ Node $i failed to start${NC}"
+        echo "Last 20 lines of log:"
+        tail -20 "$TEST_DIR/node_$i.log"
+        exit 1
+    fi
 done
 
-sleep 3
+sleep 5  # Extra time for network to stabilize
 
 # Check all nodes started
 ALIVE=0
-for pid in "${NODE_PIDS[@]}"; do
-    if kill -0 $pid 2>/dev/null; then
+FAILED_NODES=""
+for i in "${!NODE_PIDS[@]}"; do
+    if kill -0 ${NODE_PIDS[$i]} 2>/dev/null; then
         ((ALIVE++))
+    else
+        FAILED_NODES="$FAILED_NODES $i"
     fi
 done
 
@@ -80,8 +105,34 @@ if [ $ALIVE -eq $NUM_NODES ]; then
     echo -e "${GREEN}✓ All $NUM_NODES nodes started successfully${NC}"
 else
     echo -e "${RED}✗ Only $ALIVE/$NUM_NODES nodes running${NC}"
+    echo "Failed nodes:$FAILED_NODES"
+    for i in $FAILED_NODES; do
+        echo -e "\n${YELLOW}Log for failed node $i:${NC}"
+        cat "$TEST_DIR/node_$i.log"
+    done
     exit 1
 fi
+
+# Additional verification - check logs for "Bootstrap node ... is not reachable"
+echo "Verifying bootstrap connectivity..."
+BOOTSTRAP_FAILED=0
+for i in $(seq 1 $((NUM_NODES-1))); do
+    if grep -q "is not reachable" "$TEST_DIR/node_$i.log" 2>/dev/null; then
+        echo -e "${RED}✗ Node $i could not reach bootstrap${NC}"
+        ((BOOTSTRAP_FAILED++))
+    fi
+done
+
+if [ $BOOTSTRAP_FAILED -gt 0 ]; then
+    echo -e "${RED}✗ $BOOTSTRAP_FAILED nodes failed to bootstrap${NC}"
+    echo -e "\n${YELLOW}Bootstrap node (node 0) log:${NC}"
+    tail -50 "$TEST_DIR/node_0.log"
+    echo -e "\n${YELLOW}Failed node example (node 1) log:${NC}"
+    tail -50 "$TEST_DIR/node_1.log"
+    exit 1
+fi
+
+echo -e "${GREEN}✓ All nodes bootstrapped successfully${NC}"
 echo ""
 
 # Test 2: STORE Operation with K-Replication
